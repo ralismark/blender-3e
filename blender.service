@@ -1,0 +1,12 @@
+[Unit]
+Description=Blender discord bot
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/home/alarm/b3/client.py
+WorkingDirectory=/home/alarm/b3
+Restart=always
+
+[Install]
+WantedBy=default.target

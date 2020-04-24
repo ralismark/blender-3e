@@ -102,13 +102,13 @@ def channel_or_server(target, context):
         if entry == "channel":
             return (target.channel.id, target.channel.guild.id)
         if isinstance(entry, tuple) and entry[0] == "channel":
-            return (int(entry[0]), target.channel.guild.id)
+            return (int(entry[1]), target.channel.guild.id)
         if entry == "server":
             return (-1, target.channel.guild.id)
         if isinstance(entry, tuple) and entry[0] == "server":
             raise ArgError("Cannot specify server")
 
-    raise ArgError("Must specify use either option/channel or option/server")
+    raise ArgError("Must use either option/channel or option/channel=<channel id> or option/server")
 
 def true_false(string: str) -> bool:
     string = string.lower().strip()

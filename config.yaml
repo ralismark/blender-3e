@@ -5,6 +5,7 @@ discord:
     - admin
     - karma
     - managed_cat
+    - pin
 
 sql:
     path: srv.0.db

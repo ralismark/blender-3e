@@ -54,7 +54,7 @@ async def evaluate(ctx, *, expr):
 
     try:
         # pylint: disable=exec-used
-        res = exec(expr)
+        res = eval(expr)
         # pylint: enable=exec-used
         if asyncio.iscoroutine(res):
             res = await res

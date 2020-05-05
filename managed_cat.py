@@ -17,7 +17,7 @@ import unicodedata
 import discord
 from discord.ext import commands
 
-from base import fragment, settings
+from base import fragment, settings, resolver
 
 # pylint: disable=invalid-name
 managed_cat = settings.ServerSetting(
@@ -121,6 +121,7 @@ async def archive_channel(channel, category):
     """
     Archive a channel into a category
     """
+    # TODO ensure that we can actually move the channel into the graveyard
     for member in channel.overwrites.keys():
         await channel.set_permissions(member, overwrite=None,
                                       reason="Kicking everyone out")
@@ -267,6 +268,7 @@ async def leave(ctx, *, channame: slugify = None):
     if not get_member_states(chan)[State.ACTIVE]: # everyone left
         graveyard = ctx.guild.get_channel(await dead_cat.get(ctx))
         if graveyard is not None:
+            # TODO handle this failing
             await archive_channel(chan, graveyard)
 
 @setup.command()

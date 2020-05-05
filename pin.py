@@ -27,10 +27,11 @@ async def on_maybe_star(payload: discord.RawReactionActionEvent):
     Possibly star a message
     """
 
-    channel = await resolver.get_channel(payload.channel_id)
-    try:
-        message = await channel.fetch_message(payload.message_id)
-    except discord.errors.NotFound:
+    channel = await resolver.fetch_channel_maybe(payload.channel_id)
+    if not channel:
+        return
+    message = await resolver.fetch_message_maybe(channel, payload.message_id)
+    if not message:
         return
 
     star = discord.utils.get(message.reactions, emoji=STAR)
@@ -51,13 +52,16 @@ async def on_maybe_star(payload: discord.RawReactionActionEvent):
     if star.count < sb_threshhold:
         _L.debug("pin: message=%s not enough stars", message.id)
         return
+    sb_channel = await resolver.fetch_channel_maybe(sb_id)
+    if not sb_channel:
+        _L.warn("pin: pin_channel=%s does not exist", sb_id)
+        return
 
     _L.debug("pin: pinning message=%s into channel=%s", message.id, sb_id)
 
     # we've definitely starring at this point
     await message.add_reaction(STAR)
 
-    sb_channel = await resolver.get_channel(sb_id)
     embed = discord.Embed(title=":star:", color=0xf8aa39, url=message.jump_url)
     embed.description = message.clean_content
     embed.set_footer(text=f"#{channel}")

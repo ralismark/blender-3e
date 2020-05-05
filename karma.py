@@ -32,9 +32,14 @@ enable = settings.ServerChannelSetting(
 upvote = "🔺"
 
 async def parse_payload(payload):
-    channel = await resolver.get_channel(payload.channel_id)
-    message = await channel.fetch_message(payload.message_id)
-    giver = await resolver.get_user(payload.user_id)
+    channel = await resolver.fetch_channel_maybe(payload.channel_id)
+    if channel is None:
+        return None # Doesn't exist
+    message = await resolver.fetch_message_maybe(channel, payload.message_id)
+    giver = await resolver.fetch_user_maybe(payload.user_id)
+    if message is None or giver is None:
+        return None # Doesn't exist
+
     if not await enable.get(message):
         return None
 
@@ -112,7 +117,9 @@ async def leaderboards(ctx):
         """)
     embed = discord.Embed(title="Top karma")
     for idx, row in enumerate(top):
-        user = await resolver.get_user(row[0])
+        user = await resolver.fetch_user_maybe(row[0])
+        if not user:
+            user = f"<user id {row[0]}>"
         embed.add_field(name=f"{idx+1}. {user}", value=f"{row[1]}$")
 
     await ctx.send(embed=embed, delete_after=60)

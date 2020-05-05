@@ -129,7 +129,7 @@ async def chatlog(ctx, *, channel: commands.TextChannelConverter = None):
 
 @setup.command("whois")
 async def whois(ctx, *, userid: int):
-    user = await resolver.get_user(userid)
+    user = await resolver.fetch_user_maybe(userid)
     await ctx.send(f"{userid} = {user}", delete_after=10)
 
 @setup.command("hello")

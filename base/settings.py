@@ -91,7 +91,7 @@ async def apply_user(target, context):
     """
     for entry in context:
         if isinstance(entry, tuple) and entry[0] == "user":
-            return await resolver.get_user(int(entry[1]))
+            return await resolver.fetch_user_nonnull(int(entry[1]))
     return target.author
 
 def channel_or_server(target, context):
@@ -198,7 +198,7 @@ class ServerChannelSetting(SettingBase):
         for row in results:
             channame = "default"
             if row[0] > 0:
-                chan = resolver.get_channel(row[0])
+                chan = resolver.fetch_channel_maybe(row[0])
                 if chan is None or chan.guild.id != target.guild.id:
                     channame = f"<invalid #{row[0]}>"
                 else:

@@ -11,7 +11,7 @@ _BOT = None
 
 def setup(bot):
     _L.info("resolver has been initialised")
-    global _BOT
+    global _BOT # pylint: disable=global-statement
     _BOT = bot
 
 async def fetch_user_nonnull(uid: int) -> discord.User:

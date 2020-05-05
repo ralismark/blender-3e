@@ -34,7 +34,7 @@ class SettingBase(abc.ABC):
 
         self.name = name
         self.description = description or ""
-        self.default = None
+        self.default = default
 
         _SETTINGS[name] = self
 

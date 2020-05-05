@@ -16,10 +16,14 @@ _SETTINGS = dict()
 class ArgError(Exception):
     pass
 
+TargetType = typing.Union[commands.Context, discord.Message]
+ContextType = typing.List[typing.Union[str, typing.Tuple[str, str]]]
+
 class SettingBase(abc.ABC):
     """
     A base class for settings
     """
+
     def __init__(self, *,
                  name: str,
                  description: typing.Optional[str] = None,
@@ -41,7 +45,10 @@ class SettingBase(abc.ABC):
         for this target. This is intended for user/admin use.
         """
 
-    async def show(self, target: typing.Union[commands.Context, discord.Message]):
+    async def show(
+            self,
+            target: TargetType
+        ) -> str:
         """
         Retrieve the value for a given target context
         """
@@ -57,7 +64,10 @@ class SettingBase(abc.ABC):
         target context
         """
 
-    async def get(self, target: typing.Union[commands.Context, discord.Message]):
+    async def get(
+            self,
+            target: TargetType
+        ) -> object:
         """
         Retrieve the value for a given target context
         """
@@ -67,7 +77,12 @@ class SettingBase(abc.ABC):
         return value if value is not None else self.default
 
     @abc.abstractmethod
-    async def impl_set(self, value: str, target: discord.Message, context: list):
+    async def impl_set(
+            self,
+            value: str,
+            target: discord.Message,
+            context: ContextType
+        ) -> None:
         """
         The implementation should store the value specified for the
         corresponding target. The context contains any extra information
@@ -77,7 +92,7 @@ class SettingBase(abc.ABC):
         it is a single arg, otherwise it is pair of (key=value).
         """
 
-    async def check(self, predicate=bool):
+    async def check(self, predicate: typing.Callable[[object], bool] = bool):
         """
         Decorator. Only allow the command if a predicate is satisfied.
         """
@@ -85,7 +100,7 @@ class SettingBase(abc.ABC):
             return predicate(await self.get(ctx))
         return commands.check(checked)
 
-async def apply_user(target, context):
+async def apply_user(target: TargetType, context: ContextType) -> discord.User:
     """
     Get user from either target or context
     """
@@ -94,7 +109,10 @@ async def apply_user(target, context):
             return await resolver.fetch_user_nonnull(int(entry[1]))
     return target.author
 
-def channel_or_server(target, context):
+def channel_or_server(
+        target: TargetType,
+        context: ContextType
+    ) -> typing.Tuple[int, int]:
     """
     Returns a (channel, server) pair
     """
@@ -111,6 +129,9 @@ def channel_or_server(target, context):
     raise ArgError("Must use either option/channel or option/channel=<channel id> or option/server")
 
 def true_false(string: str) -> bool:
+    """
+    Parse a string as a boolean.
+    """
     string = string.lower().strip()
     if string in ("y", "yes", "t", "true", "1"):
         return True
@@ -127,7 +148,14 @@ sql.require_table("settings", """
         PRIMARY KEY(server, channel, user, option)
         """)
 
-def get_stored(option, default=None, *, server=-1, channel=-1, user=-1):
+def get_stored(
+        option: str,
+        default: object = None,
+        *,
+        server: int = -1,
+        channel: int = -1,
+        user: int = -1
+    ) -> object:
     """
     Get a value from the SQL table
     """
@@ -137,7 +165,13 @@ def get_stored(option, default=None, *, server=-1, channel=-1, user=-1):
         """, server, channel, user, option)
     return results[0][0] if results else default
 
-def delete_stored(option, *, server=-1, channel=-1, user=-1):
+def delete_stored(
+        option: str,
+        *,
+        server: int = -1,
+        channel: int = -1,
+        user: int = -1
+    ) -> None:
     """
     Delete a value in the settings table
     """
@@ -146,7 +180,14 @@ def delete_stored(option, *, server=-1, channel=-1, user=-1):
         WHERE server=? AND channel=? AND user=? AND option=?
         """, server, channel, user, option)
 
-def set_stored(option, value, *, server=-1, channel=-1, user=-1):
+def set_stored(
+        option: str,
+        value: object,
+        *,
+        server: int = -1,
+        channel: int = -1,
+        user: int = -1
+    ) -> None:
     """
     Set a value in the settings table
     """
@@ -161,7 +202,17 @@ def set_stored(option, value, *, server=-1, channel=-1, user=-1):
         """, server, channel, user, option, value)
 
 class ServerSetting(SettingBase):
-    def __init__(self, *, parse=lambda x: x, deser=lambda x: x, **kwargs):
+    """
+    A server-wide settings.
+    """
+
+    def __init__(
+            self,
+            *,
+            parse: typing.Callable[[str], object] = lambda x: x,
+            deser: typing.Callable[[object], object] = lambda x: x,
+            **kwargs
+        ):
         super().__init__(**kwargs)
 
         self.parse = parse
@@ -171,16 +222,31 @@ class ServerSetting(SettingBase):
         value = get_stored(self.name, server=target.channel.guild.id)
         return str(self.deser(value)) if value is not None else None
 
-    async def impl_get(self, target: discord.Message) -> type(None):
+    async def impl_get(self, target: discord.Message) -> object:
         value = get_stored(self.name, server=target.channel.guild.id)
         return self.deser(value) if value is not None else None
 
-    async def impl_set(self, value: str, target: discord.Message, context: list):
+    async def impl_set(
+            self,
+            value: str,
+            target: discord.Message,
+            context: ContextType
+        ) -> None:
         parsed = self.parse(value)
         set_stored(self.name, parsed, server=target.channel.guild.id)
 
 class ServerChannelSetting(SettingBase):
-    def __init__(self, *, parse=lambda x: x, deser=lambda x: x, **kwargs):
+    """
+    A channel-specific settings that allows a server-wide fallback.
+    """
+
+    def __init__(
+            self,
+            *,
+            parse: typing.Callable[[str], object] = lambda x: x,
+            deser: typing.Callable[[object], object] = lambda x: x,
+            **kwargs
+        ):
         super().__init__(**kwargs)
 
         self.parse = parse
@@ -213,14 +279,19 @@ class ServerChannelSetting(SettingBase):
 
         return shown
 
-    async def impl_get(self, target: discord.Message) -> type(None):
+    async def impl_get(self, target: discord.Message) -> object:
         chan = target.channel
         value = get_stored(self.name, server=chan.guild.id, channel=chan.id)
         if value is None:
             value = get_stored(self.name, server=chan.guild.id)
         return self.deser(value) if value is not None else None
 
-    async def impl_set(self, value: str, target: discord.Message, context: list):
+    async def impl_set(
+            self,
+            value: str,
+            target: discord.Message,
+            context: ContextType
+        ) -> None:
         channel, server = channel_or_server(target, context)
         parsed = self.parse(value)
         set_stored(self.name, parsed, server=server, channel=channel)

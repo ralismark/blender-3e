@@ -11,7 +11,7 @@ class ARLock:
     This lock is also an async context manager.
     """
     def __init__(self):
-        self._ctxcount = contextvars.ContextVar("REAsyncLock._ctxcount", default=0)
+        self._ctxcount = contextvars.ContextVar("ARLock._ctxcount", default=0)
         self._lock = asyncio.Lock()
 
     async def acquire(self):

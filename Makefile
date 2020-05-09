@@ -1,11 +1,9 @@
-.PHONY: all sync restart reload stop flogs log
+.PHONY: all sync restart log
 
-all:
-	true
+all: sync restart log
 
 sync:
-	rsync -avrh . ~/Dropbox/sync-alarm/b3 --exclude-from .gitignore --include secrets.yaml
-	ssh alarm sudo systemctl start --no-block sync-alarm \; journalctl -xafu sync-alarm
+	rsync -avrh . alarm:/home/alarm/b3 --exclude-from .gitignore --include secrets.yaml
 
 restart:
 	ssh alarm sudo systemctl restart blender

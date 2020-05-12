@@ -196,6 +196,9 @@ async def join(ctx, *, channame: slugify = None):
         if ctx.author in get_member_states(chan)[State.ACTIVE]:
             await ctx.send("Already in this channel", delete_after=10)
             return
+    elif not channame:
+        await ctx.send("Invalid channel name", delete_after=10)
+        return
     else:
         chan = discord.utils.get(cat.channels, name=channame)
 

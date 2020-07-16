@@ -27,6 +27,19 @@ async def settings(ctx: commands.Context):
             embed.add_field(name=key, value=(value.description or "no description"), inline=False)
 
         await ctx.send(embed=embed)
+#
+# @settings.command("help")
+# async def setting_help(ctx):
+#     """
+#     Shows help message
+#     """
+#
+#     helpmsg = """
+# settings here __name__: Shows the value of __name__ in current context.
+# settings set __name__ __value__: Sets the value of settings __name__ to __value__.
+# settings set __name__/__scope__=__where__... __value__: Changes the setting for the specified scopes.
+# """
+#     await
 
 @settings.command("here")
 @commands.check(fragment.is_admin_or_owner)

@@ -31,6 +31,12 @@ async def on_command_error(ctx: commands.Context, error: Exception):
     # Un-nest
     error = getattr(error, 'original', error)
 
+    def report_to_owner():
+        _L.error("exception from command %s", ctx.invoked_with, exc_info=error)
+        exc_traceback = "".join(traceback.format_exception(type(error), error, error.__traceback__))
+        await (await bot.application_info()).owner.send(
+            f"\u200bISE! {datetime.datetime.now()}\n```\n{exc_traceback} ```", delete_after=60)
+
     # Handle exceptions from user behaviour
     if isinstance(error, commands.CommandOnCooldown):
         hrs = error.retry_after // (60*60)
@@ -43,22 +49,24 @@ async def on_command_error(ctx: commands.Context, error: Exception):
         await ctx.send(f"\u200b:timer: You need to wait **{timestr}**"
                        " before you can run this command again",
                        delete_after=min(30, error.retry_after))
-        return
 
-    if isinstance(error, commands.DisabledCommand):
+    elif isinstance(error, commands.DisabledCommand):
         await ctx.send(f"\u200b`{ctx.command}` has been disabled", delete_after=10)
-        return
 
     # user_errs = (commands.UserInputError, commands.CommandNotFound, commands.CheckFailure)
-    if isinstance(error, commands.CommandError):
+    elif isinstance(error, commands.CommandError):
         await ctx.send(f"```fix\n{error}```", delete_after=10)
 
+    elif isinstance(error, discord.Forbidden):
+        try:
+            await ctx.send(f"\u200b:no_entry: This bot is missing permissions (code {error.code})")
+        # pylint: disable=bare-except
+        except:
+            report_to_owner()
+
     else:
-        await ctx.send(f"```diff\n-- 500 Internal Server Error --```", delete_after=60)
-        _L.error("exception from command %s", ctx.invoked_with, exc_info=error)
-        exc_traceback = "".join(traceback.format_exception(type(error), error, error.__traceback__))
-        await (await bot.application_info()).owner.send(
-            f"\u200bISE! {datetime.datetime.now()}\n```\n{exc_traceback} ```", delete_after=60)
+        await ctx.send("```diff\n-- 500 Internal Server Error --```", delete_after=60)
+        report_to_owner()
 
 
 @bot.event

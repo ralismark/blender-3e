@@ -6,6 +6,7 @@ discord:
     - karma
     - managed_cat
     - pin
+    - linker
 
 sql:
     path: srv.0.db

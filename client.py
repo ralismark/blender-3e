@@ -31,7 +31,7 @@ async def on_command_error(ctx: commands.Context, error: Exception):
     # Un-nest
     error = getattr(error, 'original', error)
 
-    def report_to_owner():
+    async def report_to_owner():
         _L.error("exception from command %s", ctx.invoked_with, exc_info=error)
         exc_traceback = "".join(traceback.format_exception(type(error), error, error.__traceback__))
         await (await bot.application_info()).owner.send(
@@ -62,11 +62,11 @@ async def on_command_error(ctx: commands.Context, error: Exception):
             await ctx.send(f"\u200b:no_entry: This bot is missing permissions (code {error.code})")
         # pylint: disable=bare-except
         except:
-            report_to_owner()
+            await report_to_owner()
 
     else:
         await ctx.send("```diff\n-- 500 Internal Server Error --```", delete_after=60)
-        report_to_owner()
+        await report_to_owner()
 
 
 @bot.event

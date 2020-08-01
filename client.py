@@ -156,5 +156,13 @@ for mod in config.get("discord.modules"):
 # start bot
 #
 
+@bot.event
+async def on_ready():
+    """
+    Notify of bot being ready
+    """
+    appinfo = await bot.application_info()
+    await appinfo.owner.send("`Alive` startup", delete_after=1)
+
 random.seed()
 bot.run(config.get("secrets.discord-token"))

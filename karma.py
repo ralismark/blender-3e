@@ -33,8 +33,8 @@ upvote = "🔺"
 
 async def parse_payload(payload):
     channel = await resolver.fetch_channel_maybe(payload.channel_id)
-    if channel is None:
-        return None # Doesn't exist
+    if channel is None or isinstance(channel, discord.abc.PrivateChannel):
+        return None # Doesn't exist, or is DM channel
     message = await resolver.fetch_message_maybe(channel, payload.message_id)
     giver = await resolver.fetch_user_maybe(payload.user_id)
     if message is None or giver is None:

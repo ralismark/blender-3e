@@ -51,7 +51,6 @@ class State(enum.Enum):
             return State.PASSIVE
         return State.NONE
 
-
 def slugify(name: str) -> str:
     """
     Convert string into a slug
@@ -62,6 +61,9 @@ def slugify(name: str) -> str:
     slug = re.sub(r'[-]+', '-', slug)
     return slug
 
+def is_managed(ctx):
+    catid = await managed_cat.get(ctx)
+    return bool(catid)
 
 async def to_managed(ctx: commands.Context, channame: typing.Optional[str]):
     """
@@ -132,6 +134,7 @@ async def archive_channel(channel, category):
 
 @setup.command("clear")
 @commands.check(fragment.is_admin_or_owner)
+@commands.check(is_managed)
 async def clear_channel(ctx, *, channame: slugify = None):
     """
     Delete a managed channel, even if it still has members.
@@ -150,6 +153,7 @@ async def clear_channel(ctx, *, channame: slugify = None):
 
 
 @setup.command("list")
+@commands.check(is_managed)
 async def list_channels(ctx):
     """
     List available channels
@@ -179,6 +183,7 @@ async def list_channels(ctx):
 
 
 @setup.command()
+@commands.check(is_managed)
 async def join(ctx, *, channame: slugify = None):
     """
     Join a channel
@@ -216,6 +221,7 @@ async def join(ctx, *, channame: slugify = None):
     await chan.send(embed=embed)
 
 @setup.command()
+@commands.check(is_managed)
 async def view(ctx, *, channame: slugify = None):
     """
     Set yourself to only view the channel, without being able to send messages.
@@ -240,6 +246,7 @@ async def view(ctx, *, channame: slugify = None):
         reason=f"{ctx.author.name} requested to only view {chan.name}")
 
 @setup.command()
+@commands.check(is_managed)
 async def add(ctx, member: commands.MemberConverter, *, channame: slugify = None):
     """
     Add a user to a channel.
@@ -254,6 +261,7 @@ async def add(ctx, member: commands.MemberConverter, *, channame: slugify = None
     await chan.send(embed=embed)
 
 @setup.command()
+@commands.check(is_managed)
 async def leave(ctx, *, channame: slugify = None):
     """
     Leave a channel
@@ -275,6 +283,7 @@ async def leave(ctx, *, channame: slugify = None):
             await archive_channel(chan, graveyard)
 
 @setup.command()
+@commands.check(is_managed)
 async def whosin(ctx, *, channame: slugify = None):
     """
     List the people in a channel

@@ -75,7 +75,7 @@ async def delete(ctx, *messages: int):
         await message.delete()
     await ctx.message.add_reaction("✅")
 
-@setup.command("chatlog")
+@setup.command("!chatlog", hidden=True)
 @commands.bot_has_permissions(read_message_history=True)
 @commands.is_owner()
 async def chatlog(ctx, *, channel: commands.TextChannelConverter = None):

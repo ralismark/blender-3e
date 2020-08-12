@@ -300,24 +300,3 @@ async def whosin(ctx, *, channame: slugify = None):
     embed.description += "\n".join(f"[_viewing_] {m.display_name}" for m in members[State.PASSIVE])
 
     await ctx.send(embed=embed)
-
-# @setup.listen("on_message")
-async def autojoin(message: discord.Message):
-    """
-    Automatically add a person into a channel if they speak in it.
-    """
-    if (message.guild is None
-            or message.type != discord.MessageType.default
-            or message.author.bot):
-        return # ignore
-
-    catid = managed_cat.get(message)
-    if catid is None or catid != message.channel.category_id:
-        return # ignore
-
-    if message.author in get_member_states(message.channel):
-        return # ignore - already in channel
-
-    embed = await join_channel(message.author, message.channel)
-    embed.description += " (autojoin)"
-    await message.channel.send(embed=embed)

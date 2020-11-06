@@ -4,9 +4,11 @@
 Commands related to the management of the bot (but not core to functionality)
 """
 
+import ast
 import asyncio
 import logging
 import random
+import traceback
 
 import discord
 from discord.ext import commands
@@ -16,53 +18,59 @@ from base import fragment, sql, resolver
 setup = fragment.Fragment()
 _L = logging.getLogger(__name__)
 
-@setup.command("!tdump", hidden=True)
+@setup.command("!sql", hidden=True)
 @commands.is_owner()
-async def table_dump(ctx, *, table):
+async def sql_query(ctx, *, query):
     """
-    Dump out a sql table
+    Run a SQL query
     """
-    msg = ""
-    for row in sql.query(f"SELECT * FROM {table}"):
-        if not msg:
-            msg += "\t".join(row.keys())
-            msg += "\n"
-        line = "\t".join(map(repr, row)) + "\n"
-        if len(msg) + len(line) >= 2000 - 50: # some extra leeway
-            # flush
-            await ctx.send(f"```\n{msg}```")
-            msg = ""
-        msg += line
+    buffered = ""
+    try:
+        for row in sql.query(query):
+            line = "\t".join(map(repr, row)) + "\n"
+            if len(buffered) + len(line) >= 2000 - 50: # Some extra leeway
+                # flush
+                await ctx.send(f"```\n{msg}```")
+                msg = ""
+            msg += line
 
-    await ctx.send(f"```\n{msg}```")
+        await ctx.send(f"```\n{msg}```")
+    except e:
+        await ctx.send(f"err: {e}")
 
-@setup.command("!eval", hidden=True)
+@setup.command("!exec", hidden=True)
 @commands.is_owner()
-async def evaluate(ctx, *, expr):
+async def execute(ctx, *, code):
     """
-    Evaluate an expression
+    Run python code in this context
     """
-    import traceback
-    import importlib
-    _L.warning("eval: %s", expr)
+    _L.warning("exec: %s", code)
 
-    async def apply(coro, then):
-        val = await coro
-        return then(val)
+    async def async_exec(stmts, env=None):
+        parsed_stmts = ast.parse(stmts)
 
-    using = importlib.import_module
+        fn_name = "_async_exec_f"
+
+        fn = f"async def {fn_name}(): pass"
+        parsed_fn = ast.parse(fn)
+
+        for node in parsed_stmts.body:
+            ast.increment_lineno(node)
+
+        parsed_fn.body[0].body = parsed_stmts.body
+        exec(compile(parsed_fn, filename="<ast>", mode="exec"), env)
+
+        return await eval(f"{fn_name}()", env)
 
     try:
         # pylint: disable=exec-used
-        res = eval(expr)
+        await async_exec(code, {"ctx": ctx})
         # pylint: enable=exec-used
-        if asyncio.iscoroutine(res):
-            res = await res
     except Exception as error:
         exc_traceback = "".join(traceback.format_exception(type(error), error, error.__traceback__))
         await ctx.send(f"```{exc_traceback}```")
     else:
-        await ctx.send(str(res))
+        await ctx.message.add_reaction("✅")
 
 @setup.command("!delete", hidden=True)
 @commands.is_owner()

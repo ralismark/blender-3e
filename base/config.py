@@ -4,9 +4,8 @@
 Handle global configuration relevant to the base layer only
 """
 
-import yaml
 import logging
-import random
+import yaml
 
 _L = logging.getLogger(__name__)
 

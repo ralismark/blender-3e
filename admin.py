@@ -30,13 +30,13 @@ async def sql_query(ctx, *, query):
             line = "\t".join(map(repr, row)) + "\n"
             if len(buffered) + len(line) >= 2000 - 50: # Some extra leeway
                 # flush
-                await ctx.send(f"```\n{msg}```")
-                msg = ""
-            msg += line
+                await ctx.send(f"```\n{buffered}```")
+                buffered = ""
+            buffered += line
 
-        await ctx.send(f"```\n{msg}```")
-    except e:
-        await ctx.send(f"err: {e}")
+        await ctx.send(f"```\n{buffered}```")
+    except Exception as error:
+        await ctx.send(f"err: {error}")
 
 @setup.command("!exec", hidden=True)
 @commands.is_owner()
@@ -137,6 +137,9 @@ async def chatlog(ctx, *, channel: commands.TextChannelConverter = None):
 
 @setup.command("whois")
 async def whois(ctx, *, userid: int):
+    """
+    Find someone's username from just their userid
+    """
     user = await resolver.fetch_user_maybe(userid)
     await ctx.send(f"{userid} = {user}", delete_after=10)
 

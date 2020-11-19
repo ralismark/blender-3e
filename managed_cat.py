@@ -61,7 +61,7 @@ def slugify(name: str) -> str:
     slug = re.sub(r'[-]+', '-', slug)
     return slug
 
-def is_managed(ctx):
+async def is_managed(ctx):
     catid = await managed_cat.get(ctx)
     return bool(catid)
 

@@ -11,6 +11,9 @@ discord:
 sql:
     path: srv.0.db
 
+karma:
+  - "no-anyreact"
+
 logging:
     version: 1
     disable_existing_loggers: false

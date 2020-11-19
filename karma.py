@@ -6,7 +6,7 @@ import enum
 import discord
 from discord.ext import commands
 
-from base import sql, fragment, settings, resolver
+from base import sql, fragment, settings, resolver, config
 
 setup = fragment.Fragment()
 _L = logging.getLogger(__name__)
@@ -96,10 +96,18 @@ async def get_karma(ctx, who: commands.UserConverter = None):
     if who is None:
         who = ctx.author
 
-    karma = sql.query("""
+    query = """
         SELECT ifnull(SUM(delta), 0) FROM karma
         WHERE receiver=?
-        """, who.id)
+        """
+
+    if "no-anyreact" in config.get("karma"):
+        query = """
+            SELECT ifnull(SUM(delta), 0) FROM karma
+            WHERE receiver=? AND kind != 2
+            """
+
+    karma = sql.query(query, who.id)
     karma = (karma[0][0] or 0) if karma else 0
 
     await ctx.send(f"🔶 {who} is at {karma}$", delete_after=60)
@@ -109,12 +117,24 @@ async def leaderboards(ctx):
     """
     Show the people who have the most karma
     """
-    top = sql.query("""
+
+    query = """
         SELECT receiver, SUM(delta) AS net FROM karma
         GROUP BY receiver
         ORDER BY net DESC
         LIMIT 10
-        """)
+        """
+
+    if "no-anyreact" in config.get("karma"):
+        query = """
+            SELECT receiver, SUM(delta) AS net FROM karma
+            WHERE kind != 2
+            GROUP BY receiver
+            ORDER BY net DESC
+            LIMIT 10
+            """
+
+    top = sql.query(query)
     embed = discord.Embed(title="Top karma")
     for idx, row in enumerate(top):
         user = await resolver.fetch_user_maybe(row[0])

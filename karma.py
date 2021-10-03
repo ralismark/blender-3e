@@ -14,6 +14,7 @@ _L = logging.getLogger(__name__)
 class Kind(enum.IntEnum):
     UPVOTE = 1
     ANYREACT = 2
+    DOWNVOTE = 3
 
 sql.require_table("karma", """
         giver INTEGER NOT NULL,
@@ -29,6 +30,7 @@ enable = settings.ServerChannelSetting(
         description="Enable voting on messages",
         parse=settings.true_false)
 
+downvote = "🔻"
 upvote = "🔺"
 
 async def parse_payload(payload):
@@ -49,18 +51,22 @@ async def parse_payload(payload):
     if message.author.bot or giver.bot:
         return None # no bots
 
-    kind = Kind.UPVOTE
-    if str(payload.emoji) != upvote:
-        kind = Kind.ANYREACT
-        # return # not an upvote
+    kind = Kind.ANYREACT
+    delta = 1
+
+    if str(payload.emoji) == upvote:
+        kind = Kind.UPVOTE
+    elif str(payload.emoji) == downvote:
+        delta = -1
+        kind = Kind.DOWNVOTE
 
     return {
         "giver": payload.user_id,
         "message": payload.message_id,
         "kind": kind,
-        "delta": 1,
+        "delta": delta,
         "receiver": message.author.id
-        }
+    }
 
 @setup.listen("on_raw_reaction_add")
 async def on_reaction_add(payload):
